@@ -1,7 +1,7 @@
 {
 	"name": "valbot",
 	"version": "1.0.0",
-	"description": "Discord bot for Valorant tournament setup",
+	"description": "Spotify + Discord Bot = Game",
 	"main": "index.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1"

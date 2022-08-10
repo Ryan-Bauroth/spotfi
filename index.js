@@ -1,84 +1,107 @@
-const fs = require('fs')
 var SpotifyWebApi = require('spotify-web-api-node');
+require('dotenv').config()
+const querystring = require('node:querystring');
 const express = require('express')
+const axios = require('axios');
+const port = 8888;
+const characters ='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
-// credentials are optional
-var spotifyApi = new SpotifyWebApi({
-  clientId: 'af7b96e4abbc4f98943e5a9dbf839303',
-  clientSecret: '940aaf4f9b2043cbaf3aa0eb3067b34e',
-  redirectUri: 'http://localhost:8888/callback'
-});
+const CLIENT_ID = process.env.CLIENT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const REDIRECT_URI = process.env.REDIRECT_URI;
 
-const token = 'BQDNsXLaxXHGfuFyJHRT3MUsc5YNd-2jrP8F_7wx44ptKCWH2flEn3oKmgDZtQpJ31TLtj-S9QJUlVuDwUU9YPhogrFCMo1blcpSQfBZ9BXlv2uh4YJdmyVlq46SuBnMjKeiEBec5vYYPxsjcJsvY-xrHbJJbHs7N_aFYzrRZe2CF3XnssFzdzpLd1jgbn9JGclFVc02QKudGLzMC11lHNBEyKUgwvQzD80kPXdkP7BfjU3TTB8z_E8j5_-I96TMGBTFY6bT8JoUqtirbxKUwGP9m-Dhdqp6iHBUquUNyCqt6oR8dD3JGRNQPpW0273MwpYWnrE3lN3tsDh1tgHy'
-const scopes = [
-    'ugc-image-upload',
-    'user-read-playback-state',
-    'user-modify-playback-state',
-    'user-read-currently-playing',
-    'streaming',
-    'app-remote-control',
-    'user-read-email',
-    'user-read-private',
-    'playlist-read-collaborative',
-    'playlist-modify-public',
-    'playlist-read-private',
-    'playlist-modify-private',
-    'user-library-modify',
-    'user-library-read',
-    'user-top-read',
-    'user-read-playback-position',
-    'user-read-recently-played',
-    'user-follow-read',
-    'user-follow-modify'
-  ];
 
-const app = express();
+var app = express();
 
-app.get('/login', (req, res) => {
-  res.redirect(spotifyApi.createAuthorizeURL(scopes));
-});
+app.get('/login', (req,res) => {
+  var state = generateRandomString(16);
+  var scope = 'user-read-private user-read-email';
+
+  res.redirect('https://accounts.spotify.com/authorize?' +
+    querystring.stringify({
+      response_type: 'code',
+      client_id: CLIENT_ID,
+      scope: scope,
+      redirect_uri: REDIRECT_URI,
+      state: state
+    }));
+}) 
 
 app.get('/callback', (req, res) => {
-  const error = req.query.error;
-  const code = req.query.code;
-  const state = req.query.state;
+  const code = req.query.code || null;
 
-  if (error) {
-    console.error('Callback Error:', error);
-    res.send(`Callback Error: ${error}`);
-    return;
-  }
+  axios({
+    method: 'post',
+    url: 'https://accounts.spotify.com/api/token',
+    data: querystring.stringify({
+      grant_type: 'authorization_code',
+      code: code,
+      redirect_uri: REDIRECT_URI
+    }),
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+      Authorization: `Basic ${new Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64')}`,
+    },
+  })
+  .then(response => {
+    if (response.status === 200) {
 
-  spotifyApi
-    .authorizationCodeGrant(code)
-    .then(data => {
-      const access_token = data.body['access_token'];
-      const refresh_token = data.body['refresh_token'];
-      const expires_in = data.body['expires_in'];
+      const { access_token, token_type } = response.data;
 
-      spotifyApi.setAccessToken(access_token);
-      spotifyApi.setRefreshToken(refresh_token);
+      axios.get('https://api.spotify.com/v1/me', {
+        headers: {
+          Authorization: `${token_type} ${access_token}`
+        }
+      })
+        .then(response => {
+          res.send(`<pre>${JSON.stringify(response.data, null, 2)}</pre>`);
+        })
+        .catch(error => {
+          res.send(error);
+        });
 
-      console.log('access_token:', access_token);
-      console.log('refresh_token:', refresh_token);
+    } else {
+      res.send(response);
+    }
+  })
+  .catch(error => {
+    res.send(error);
+  })
+});
 
-      console.log(
-        `Sucessfully retreived access token. Expires in ${expires_in} s.`
-      );
-      res.send('Success! You can now close the window.');
+app.get('/refresh_token', (req, res) => {
+  const { refresh_token } = req.query;
 
-      setInterval(async () => {
-        const data = await spotifyApi.refreshAccessToken();
-        const access_token = data.body['access_token'];
-
-        console.log('The access token has been refreshed!');
-        console.log('access_token:', access_token);
-        spotifyApi.setAccessToken(access_token);
-      }, expires_in / 2 * 1000);
+  axios({
+    method: 'post',
+    url: 'https://accounts.spotify.com/api/token',
+    data: querystring.stringify({
+      grant_type: 'refresh_token',
+      refresh_token: refresh_token
+    }),
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+      Authorization: `Basic ${new Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64')}`,
+    },
+  })
+    .then(response => {
+      res.send(response.data);
     })
     .catch(error => {
-      console.error('Error getting Tokens:', error);
-      res.send(`Error getting Tokens: ${error}`);
+      res.send(error);
     });
 });
 
+function generateRandomString(length) {
+    let result = ' ';
+    const charactersLength = characters.length;
+    for ( let i = 0; i < length; i++ ) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+
+    return result;
+}
+
+app.listen(port, () => {
+  console.log('express app listening at http://locallhost:8888');
+})
