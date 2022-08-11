@@ -1,5 +1,59 @@
 const SpotifyWebApi = require('spotify-web-api-node');
-const token = 'BQA0tJBZW1nrExDiyoM6CdA0E5-A02sqrNuep_QtQ-vBKJLgRMIt5R6uW5LwLCKJK3W_6KRvUUzkr_lfAxJdS7Mny0oVbQTpWPe8desNBQrDam80QxY3_bjs2AHvWsBzTTYlsrcUiZWhPzvaD5LmAXOX22fihxwuNhBpzLyRxRUUTNVoFksAcwwT_MGSLGHDsDcD6Ri6bMitexAIxM6tMg';
+const token = 'BQAYNzJ7uhFUSe-CdToLKTbUGEITN-RJCIgxs8n0IIjxgS_592HIkGq2Q7umQQfkAE1uuEWctjdtZFB8BD24PI7hiAraSc6U_DQrVHpidoue6Lj3s54QLqVKaagUPIt9LcdcEYgeNr3o7GdJr1mI1Ci04MosorQbw6xkNOQlDqX1MbFsBV64XFTfTIP4L02NCcdluQOYBlyGlFaH5a2njg';
+
+// Require the necessary discord.js classes
+const { channelMention } = require('@discordjs/builders');
+const { EmbedBuilder } = require('discord.js');
+const { Client, Intents, MessageReaction } = require('discord.js');
+const { dToken } = require('./config.json');
+// Create a new client instance
+const client = new Client({ intents: [
+	Intents.FLAGS.GUILDS,
+	Intents.FLAGS.GUILD_MESSAGES,
+	Intents.FLAGS.GUILD_MESSAGE_REACTIONS
+] });
+
+client.once('ready', () => {
+	console.log('Running!');
+});
+
+client.on('messageCreate', (message) => { 
+    if(message.content.startsWith('!')){
+        if(message.content.substring(1) == 'spotfi' || message.content.substring(1) == 'Spotfi'){
+            var rand = Math.floor(Math.random() * (tracks.length + 1));
+            console.log(tracks[rand].name);
+            console.log(tracks[rand].external_urls);
+
+        const quizEmbed = {
+            color: 0x0099ff,
+            title: 'Who listens to this song???',
+            description: tracks[rand].name,
+            url: (tracks[rand].external_urls),
+            /*author: {
+                name: tracks[rand].artists[1],
+                icon_url: tracks[rand].images,
+                url: tracks[rand].external_urls,
+            },
+            */
+            timestamp: new Date().toISOString(),
+            footer: {
+                text: 'Made by Ryfi',
+                icon_url: 'https://i.scdn.co/image/ab6775700000ee85f7338c3e25e8cf840e3d3853',
+            },
+        };
+        
+        message.channel.send({ embeds: [quizEmbed] });
+        }
+    }
+});
+
+
+
+
+
+
+
+
 
 const tracks = [];
 
@@ -42,3 +96,4 @@ getUser();
     console.log(track.name);
 }
 */
+client.login(dToken);
