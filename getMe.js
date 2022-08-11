@@ -1,5 +1,5 @@
 const SpotifyWebApi = require('spotify-web-api-node');
-const token = 'BQAYNzJ7uhFUSe-CdToLKTbUGEITN-RJCIgxs8n0IIjxgS_592HIkGq2Q7umQQfkAE1uuEWctjdtZFB8BD24PI7hiAraSc6U_DQrVHpidoue6Lj3s54QLqVKaagUPIt9LcdcEYgeNr3o7GdJr1mI1Ci04MosorQbw6xkNOQlDqX1MbFsBV64XFTfTIP4L02NCcdluQOYBlyGlFaH5a2njg';
+const token = 'BQCAQZkZIrOhcTxVYYoA7qdfuxHmfCuYsN9WnfIy6WBUWfzR26nIsmSSHUt-DMwkjjePgs_hwEHKfnYL0cMTxHvz3Ya1UXheFwTciIigmniQ9N65Suig3XPrfZh0zT22-ROcWM6RH2R_tBvMa4VWLeHCkV16GHRDQ85Th81wjO8PWINfzCjUGxCJkCNH6XTcRRQltWIFRNE_XtHUGb-Cow';
 
 // Require the necessary discord.js classes
 const { channelMention } = require('@discordjs/builders');
@@ -13,6 +13,7 @@ const client = new Client({ intents: [
 	Intents.FLAGS.GUILD_MESSAGE_REACTIONS
 ] });
 
+
 client.once('ready', () => {
 	console.log('Running!');
 });
@@ -21,20 +22,16 @@ client.on('messageCreate', (message) => {
     if(message.content.startsWith('!')){
         if(message.content.substring(1) == 'spotfi' || message.content.substring(1) == 'Spotfi'){
             var rand = Math.floor(Math.random() * (tracks.length + 1));
-            console.log(tracks[rand].name);
-            console.log(tracks[rand].external_urls);
-
         const quizEmbed = {
             color: 0x0099ff,
-            title: 'Who listens to this song???',
-            description: tracks[rand].name,
-            url: (tracks[rand].external_urls),
-            /*author: {
-                name: tracks[rand].artists[1],
-                icon_url: tracks[rand].images,
-                url: tracks[rand].external_urls,
+            title: tracks[rand].name,
+            description: 'Who listens to this song???',
+            url: (convertToString(JSON.stringify(tracks[rand].external_urls))),
+            author: {
+                name: tracks[rand].artists[0].name,
+                icon_url:  '',
+                url: tracks[rand].artists[0].external_urls.spotify,
             },
-            */
             timestamp: new Date().toISOString(),
             footer: {
                 text: 'Made by Ryfi',
@@ -48,7 +45,17 @@ client.on('messageCreate', (message) => {
 });
 
 
-
+function convertToString(input){
+    var splits = input.split(/("+)/);
+    for (let i = 0; i < 6; i++){
+        splits.shift()
+    }
+    splits.pop();
+    splits.pop();
+    var unsplit = splits.toString();
+    unsplit.replace(/,/g,"");
+    return unsplit;
+}
 
 
 
