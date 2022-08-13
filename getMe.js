@@ -1,10 +1,9 @@
 const SpotifyWebApi = require('spotify-web-api-node');
-const token = 'BQCAQZkZIrOhcTxVYYoA7qdfuxHmfCuYsN9WnfIy6WBUWfzR26nIsmSSHUt-DMwkjjePgs_hwEHKfnYL0cMTxHvz3Ya1UXheFwTciIigmniQ9N65Suig3XPrfZh0zT22-ROcWM6RH2R_tBvMa4VWLeHCkV16GHRDQ85Th81wjO8PWINfzCjUGxCJkCNH6XTcRRQltWIFRNE_XtHUGb-Cow';
+const token = 'BQASb7oUwaZGbtw8X6FLPnOtGeMbcXYS6OLyJ5aqUfLAd0sH_iUhSzzw2sAyuQTsFIuk5tSVutp30pKAAszjiHmQomvA97bnSKs6rwXRxMeYs9tiDM6sxS2Z4KG0hkfsJ3PUlzZzZUU3DUTFc96GG1Y1TQQWZq_JyahXBsWyntxB9wq6PBfateLyOERSkVqxxh1qwv7DAwG-KdY5kUJ_Sg';
 
 // Require the necessary discord.js classes
-const { channelMention } = require('@discordjs/builders');
-const { EmbedBuilder } = require('discord.js');
 const { Client, Intents, MessageReaction } = require('discord.js');
+const { MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
 const { dToken } = require('./config.json');
 // Create a new client instance
 const client = new Client({ intents: [
@@ -15,22 +14,28 @@ const client = new Client({ intents: [
 
 
 client.once('ready', () => {
-	console.log('Running!');
+	console.log('Running!');;
 });
 
 client.on('messageCreate', (message) => { 
     if(message.content.startsWith('!')){
         if(message.content.substring(1) == 'spotfi' || message.content.substring(1) == 'Spotfi'){
             var rand = Math.floor(Math.random() * (tracks.length + 1));
+            if(tracks[rand].is_local == false){
         const quizEmbed = {
             color: 0x0099ff,
-            title: tracks[rand].name,
-            description: 'Who listens to this song???',
+            title: 'Who listens to ' + tracks[rand].name + '?',
             url: (convertToString(JSON.stringify(tracks[rand].external_urls))),
             author: {
-                name: tracks[rand].artists[0].name,
-                icon_url:  '',
+                name: tracks[rand].name + ' - ' + tracks[rand].artists[0].name,
+                icon_url:  tracks[rand].album.images[0].url,
                 url: tracks[rand].artists[0].external_urls.spotify,
+                //tracks[rand].artists[0].external_urls.spotify
+                //(convertToString(JSON.stringify(tracks[rand].external_urls)))
+                //tracks[rand].preview_url
+            },
+            image: {
+                url: tracks[rand].album.images[0].url,
             },
             timestamp: new Date().toISOString(),
             footer: {
@@ -38,10 +43,46 @@ client.on('messageCreate', (message) => {
                 icon_url: 'https://i.scdn.co/image/ab6775700000ee85f7338c3e25e8cf840e3d3853',
             },
         };
-        
-        message.channel.send({ embeds: [quizEmbed] });
+        const quizAnswers = new MessageActionRow()
+			.addComponents(
+				new MessageButton()
+					.setCustomId('1')
+					.setLabel('Name')
+					.setStyle('PRIMARY'),
+			)
+			.addComponents(
+				new MessageButton()
+					.setCustomId('2')
+					.setLabel('Name')
+					.setStyle('PRIMARY'),
+			)
+			.addComponents(
+				new MessageButton()
+					.setCustomId('3')
+					.setLabel('Name')
+					.setStyle('PRIMARY'),
+			)
+			.addComponents(
+				new MessageButton()
+					.setCustomId('4')
+					.setLabel('Name')
+					.setStyle('PRIMARY'),
+			)
+            .addComponents(
+                new MessageButton()
+                    .setURL(tracks[rand].preview_url)
+                    .setLabel('Song Preview')
+                    .setStyle('LINK')
+            );
+        message.channel.send({ embeds: [quizEmbed] , components: [quizAnswers] });
         }
     }
+    }
+});
+
+client.on('interactionCreate', interaction => {
+	if (!interaction.isButton()) return;
+	console.log(interaction);
 });
 
 
@@ -56,11 +97,6 @@ function convertToString(input){
     unsplit.replace(/,/g,"");
     return unsplit;
 }
-
-
-
-
-
 
 const tracks = [];
 
