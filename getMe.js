@@ -1,10 +1,11 @@
 const SpotifyWebApi = require('spotify-web-api-node');
-const token = 'BQASb7oUwaZGbtw8X6FLPnOtGeMbcXYS6OLyJ5aqUfLAd0sH_iUhSzzw2sAyuQTsFIuk5tSVutp30pKAAszjiHmQomvA97bnSKs6rwXRxMeYs9tiDM6sxS2Z4KG0hkfsJ3PUlzZzZUU3DUTFc96GG1Y1TQQWZq_JyahXBsWyntxB9wq6PBfateLyOERSkVqxxh1qwv7DAwG-KdY5kUJ_Sg';
+const token = 'BQAAeWaPwdOr4c3VX0AjQYONC-DQqQhr7VXdmnOmADdwq8WWsN5K0M-8nierQKo-OjbIsfmLdR50T8cZ3lF62g87Ft7Qw8lqgXvxHxb5rJ-f58qkISyZREOoK9rojZe6l2jOhe-4PjRCfIURbbq_LVKT7vFYTpSTHerSPJ2et_MU_GZ60N3QmX1vyYzhf89AaIiZSxnhsXk9wSxeV_Rkaw';
 
 // Require the necessary discord.js classes
 const { Client, Intents, MessageReaction } = require('discord.js');
 const { MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
 const { dToken } = require('./config.json');
+var fs = require('fs');
 // Create a new client instance
 const client = new Client({ intents: [
 	Intents.FLAGS.GUILDS,
@@ -13,22 +14,21 @@ const client = new Client({ intents: [
 ] });
 
 
-client.once('ready', () => {
-	console.log('Running!');;
+client.once('ready', async () => {
 });
 
-client.on('messageCreate', (message) => { 
+client.on('messageCreate', async (message) => { 
     if(message.content.startsWith('!')){
         if(message.content.substring(1) == 'spotfi' || message.content.substring(1) == 'Spotfi'){
-            var rand = Math.floor(Math.random() * (tracks.length + 1));
-            if(tracks[rand].is_local == false){
+            var rand = Math.floor(Math.random() * (tracks.length));
+            if(tracks[rand].is_local == false && testFollowedUsers == true){
         const quizEmbed = {
             color: 0x0099ff,
-            title: 'Who listens to ' + tracks[rand].name + '?',
+            title: 'Guess who listens to ' + tracks[rand].name + '?',
             url: (convertToString(JSON.stringify(tracks[rand].external_urls))),
             author: {
                 name: tracks[rand].name + ' - ' + tracks[rand].artists[0].name,
-                icon_url:  tracks[rand].album.images[0].url,
+                icon_url: await getArtistImage(tracks[rand].artists[0].id),
                 url: tracks[rand].artists[0].external_urls.spotify,
                 //tracks[rand].artists[0].external_urls.spotify
                 //(convertToString(JSON.stringify(tracks[rand].external_urls)))
@@ -39,11 +39,11 @@ client.on('messageCreate', (message) => {
             },
             timestamp: new Date().toISOString(),
             footer: {
-                text: 'Made by Ryfi',
+                text: 'Bot Made by Ryfi',
                 icon_url: 'https://i.scdn.co/image/ab6775700000ee85f7338c3e25e8cf840e3d3853',
             },
         };
-        const quizAnswers = new MessageActionRow()
+        const quizButtons = new MessageActionRow()
 			.addComponents(
 				new MessageButton()
 					.setCustomId('1')
@@ -74,7 +74,7 @@ client.on('messageCreate', (message) => {
                     .setLabel('Song Preview')
                     .setStyle('LINK')
             );
-        message.channel.send({ embeds: [quizEmbed] , components: [quizAnswers] });
+        message.channel.send({ embeds: [quizEmbed] , components: [quizButtons] });
         }
     }
     }
@@ -82,7 +82,18 @@ client.on('messageCreate', (message) => {
 
 client.on('interactionCreate', interaction => {
 	if (!interaction.isButton()) return;
-	console.log(interaction);
+    if(interaction.customId == '1'){
+        console.log('guess name one')
+    }
+    else if(interaction.customId == '2'){
+        console.log('guess name two')
+    }
+    else if(interaction.customId == '3'){
+        console.log('guess name three')
+    }
+    else if(interaction.customId == '4'){
+        console.log('guess name four')
+    }
 });
 
 
@@ -98,45 +109,68 @@ function convertToString(input){
     return unsplit;
 }
 
-const tracks = [];
+function getArtistImage(id){
+    return spotifyApi.getArtist(id)
+    .then(function(artistData) {
+        return artistData.body.images[0].url;
+    })
+}
 
-const spotifyApi = new SpotifyWebApi();
+/*
+function testFollowedUsers(){
+    //return true;
+    console.log(userIds);
+    var rand = Math.floor(Math.random() * (userIds.length));
+    console.log(rand)
+    spotifyApi.getUserPlaylists(userIds[rand])
+    .then(async function (userPlayIds){
+        console.log(userPlayIds);
+        const data = await spotifyApi.getPlaylistTracks(userPlayIds)
+        for(let userTracks of data.body.items){
+            //console.log(userTracks);
+        }
+        
+    })
+}
+*/
+var tracks = [];
+
+async function getUsers(){
+    const spotifyApi = new SpotifyWebApi();
     spotifyApi.setAccessToken(token);
-
-    function getUser()
-    {
-        spotifyApi.getMe()
-        .then(function(userData){
-            getPlaylists(userData.body.id);
+    return await getUser();
+    async function getUser(){
+        return await spotifyApi.getMe()
+        .then(async function(userData){
+            //console.log(await getPlaylists(userData.body.id));
+            return await getPlaylists(userData.body.id);
         })
     }
 
     async function getPlaylists(userId){
-        spotifyApi.getUserPlaylists(userId)
+        return spotifyApi.getUserPlaylists(userId)
         .then(async function(playlistData) {
+            let playlistTracks = [];
             for (let playlist of playlistData.body.items){
-                getTracks(playlist.id);
-            }
-        })
+            playlistTracks.push(await getTracks(playlist.id));
+            //console.log(await getTracks(playlist.id))
+        }
+        return playlistTracks;
+    })
     }
 
     async function getTracks(playId){
         const data = await spotifyApi.getPlaylistTracks(playId, {
-            offset: 1,
+            offset: 0,
             limit: 100,
             fields: 'items'
           })
-        
+          let track = [];
           for (let track_obj of data.body.items) {
-            const track = track_obj.track
-            tracks.push(track);
+            track.push(track_obj.track)
+            //console.log(track_obj.track)
           }
+          return track;
         }
-
-getUser();
-
-/*for (let track of tracks.length){
-    console.log(track.name);
 }
-*/
 client.login(dToken);
