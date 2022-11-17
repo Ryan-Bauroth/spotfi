@@ -91,6 +91,7 @@ app.get('/refresh_token', (req, res) => {
   })
     .then(response => {
       res.send(response.data);
+      console.log("refreshed");
     })
     .catch(error => {
       res.send(error);
